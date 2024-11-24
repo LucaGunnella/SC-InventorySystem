@@ -3,7 +3,7 @@ using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
-public class Stack : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHandler
+public class Stack : Draggable
 {
 
     [NonSerialized] public int gridPosX;
@@ -21,7 +21,8 @@ public class Stack : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHan
             throw new NullReferenceException("Slot is null");
     }
 
-    public void OnBeginDrag(PointerEventData eventData) {
+    public override void OnBeginDrag(PointerEventData eventData) {
+        base.OnBeginDrag(eventData);
         transform.position = Input.mousePosition;
 
         transform.SetParent(Slot.transform.parent);
@@ -32,11 +33,12 @@ public class Stack : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHan
         Slot.SetStack(null);
     }
 
-    public void OnDrag(PointerEventData eventData) {
+    public override void OnDrag(PointerEventData eventData) {
         transform.position = Input.mousePosition;
     }
 
-    public void OnEndDrag(PointerEventData eventData) {
+    public override void OnEndDrag(PointerEventData eventData) {
+        base.OnEndDrag(eventData);
         transform.SetParent(Slot.transform);
         _image.raycastTarget = true;
     }

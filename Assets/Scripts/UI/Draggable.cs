@@ -1,7 +1,7 @@
 using UnityEngine;
 using UnityEngine.EventSystems;
 
-public class DraggableWindow : MonoBehaviour, IDragHandler
+public class Draggable : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHandler
 {
     private Canvas _canvas;
     private RectTransform _rectTransform;
@@ -10,8 +10,15 @@ public class DraggableWindow : MonoBehaviour, IDragHandler
         _canvas = transform.parent.GetComponent<Canvas>();
         _rectTransform = GetComponent<RectTransform>();
     }
-
-    public void OnDrag(PointerEventData eventData) {
+    
+    public virtual void OnBeginDrag(PointerEventData eventData) {
+    }
+    
+    public virtual void OnDrag(PointerEventData eventData) {
         _rectTransform.anchoredPosition += eventData.delta / _canvas.scaleFactor;
     }
+
+    public virtual void OnEndDrag(PointerEventData eventData) {
+    }
+
 }
