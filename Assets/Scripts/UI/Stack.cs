@@ -12,7 +12,8 @@ public class Stack : Draggable
     public Slot Slot { get; private set; }
     private Image _image;
 
-    private void Awake() {
+    protected override void Awake() {
+        base.Awake();
         _image = GetComponent<Image>();
 
         if (transform.parent.TryGetComponent<Slot>(out var slot))
@@ -25,16 +26,12 @@ public class Stack : Draggable
         base.OnBeginDrag(eventData);
         transform.position = Input.mousePosition;
 
-        transform.SetParent(Slot.transform.parent);
+        transform.SetParent(_canvas.transform);
         transform.SetAsLastSibling();
 
         _image.raycastTarget = false;
 
         Slot.SetStack(null);
-    }
-
-    public override void OnDrag(PointerEventData eventData) {
-        transform.position = Input.mousePosition;
     }
 
     public override void OnEndDrag(PointerEventData eventData) {

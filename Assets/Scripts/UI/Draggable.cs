@@ -3,11 +3,11 @@ using UnityEngine.EventSystems;
 
 public class Draggable : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHandler
 {
-    private Canvas _canvas;
-    private RectTransform _rectTransform;
+    protected Canvas _canvas;
+    protected RectTransform _rectTransform;
     
-    private void Awake() {
-        _canvas = transform.parent.GetComponent<Canvas>();
+    protected virtual void Awake() {
+        _canvas = transform.GetComponentInParent<Canvas>();
         _rectTransform = GetComponent<RectTransform>();
     }
     
