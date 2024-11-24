@@ -7,7 +7,7 @@ public class Slot : MonoBehaviour, IDropHandler
     private Stack _stack;
 
     public void OnDrop(PointerEventData eventData) {
-        var droppedStack = eventData.pointerDrag.GetComponent<Stack>();
+        if(!eventData.pointerDrag.TryGetComponent<Stack>(out var droppedStack)) return;
         
         //switches stack with other item slot
         if (_stack != null) {
