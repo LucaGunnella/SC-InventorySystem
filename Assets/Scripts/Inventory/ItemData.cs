@@ -2,11 +2,18 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-[CreateAssetMenu(fileName = "newItemData", menuName = "Asset/ItemData")]
-public class ItemData : ScriptableObject
+namespace SCI_LG
 {
-    public string itemName;
-    public Sprite icon;
-    public bool stackable = true;
-    public List<Effect> effects;
+
+    [CreateAssetMenu(fileName = "newItemData", menuName = "Asset/ItemData")]
+    public class ItemData : ScriptableObject
+    {
+
+        public string itemName;
+        public Sprite icon;
+        public bool stackable = true;
+        public List<Effect> effects;
+
+    }
+
 }

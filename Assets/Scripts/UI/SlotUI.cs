@@ -1,24 +1,29 @@
 using UnityEngine;
 using UnityEngine.EventSystems;
 
-public class SlotUI : MonoBehaviour, IDropHandler
+namespace SCI_LG
 {
 
-    private StackUI stackUI;
+    public class SlotUI : MonoBehaviour, IDropHandler
+    {
 
-    public void OnDrop(PointerEventData eventData) {
-        if(!eventData.pointerDrag.TryGetComponent<StackUI>(out var droppedStack)) return;
-        
-        //switches stack with other item slot
-        if (stackUI != null) {
-            stackUI.SetSlot(droppedStack.SlotUI);
+        private StackUI _stackUIowned;
+
+        public void OnDrop(PointerEventData eventData) {
+            if (!eventData.pointerDrag.TryGetComponent<StackUI>(out var droppedStack)) return;
+
+            //switches stack with other item slot
+            if (_stackUIowned != null) {
+                _stackUIowned.SetSlot(droppedStack.SlotUIOwner);
+            }
+
+            droppedStack.SetSlot(this);
         }
-        
-        droppedStack.SetSlot(this);
-    }
 
-    public void SetStack(StackUI stackUI) {
-        this.stackUI = stackUI;
+        public void SetStack(StackUI stackUI) {
+            this._stackUIowned = stackUI;
+        }
+
     }
 
 }

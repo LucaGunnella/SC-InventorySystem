@@ -1,45 +1,62 @@
 using System;
+using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
-public class StackUI : Draggable
+namespace SCI_LG
 {
-    public SlotUI SlotUI { get; private set; }
-    private Image _image;
 
-    protected override void Awake() {
-        base.Awake();
-        _image = GetComponent<Image>();
+    public class StackUI : Draggable
+    {
 
-        if (transform.parent.TryGetComponent<SlotUI>(out var slot))
-            SetSlot(slot);
-        else
-            throw new NullReferenceException("Slot is null");
-    }
+        [SerializeField] private Image _image;
+        [SerializeField] private TextMeshProUGUI _quantityText;
+        
+        private ItemStack _itemStack;
+        
+        public SlotUI SlotUIOwner { get; private set; }
 
-    public override void OnBeginDrag(PointerEventData eventData) {
-        base.OnBeginDrag(eventData);
-        transform.position = Input.mousePosition;
+        protected override void Awake() {
+            base.Awake();
+            _image = GetComponent<Image>();
 
-        transform.SetParent(_canvas.transform);
-        transform.SetAsLastSibling();
+            if (transform.parent.TryGetComponent<SlotUI>(out var slot))
+                SetSlot(slot);
+            else
+                throw new NullReferenceException("Slot is null");
+        }
 
-        _image.raycastTarget = false;
+        public void SetUI(ItemStack itemStack) {
+            _image.sprite = itemStack.ItemData.icon;
+            _quantityText.text = itemStack.quantity.ToString();
+            _itemStack = itemStack;
+        }
 
-        SlotUI.SetStack(null);
-    }
+        public override void OnBeginDrag(PointerEventData eventData) {
+            base.OnBeginDrag(eventData);
+            transform.position = Input.mousePosition;
 
-    public override void OnEndDrag(PointerEventData eventData) {
-        base.OnEndDrag(eventData);
-        transform.SetParent(SlotUI.transform);
-        _image.raycastTarget = true;
-    }
+            transform.SetParent(_canvas.transform);
+            transform.SetAsLastSibling();
 
-    public void SetSlot(SlotUI slotUI) {
-        SlotUI = slotUI;
-        SlotUI.SetStack(this);
-        transform.SetParent(SlotUI.transform);
+            _image.raycastTarget = false;
+
+            SlotUIOwner.SetStack(null);
+        }
+
+        public override void OnEndDrag(PointerEventData eventData) {
+            base.OnEndDrag(eventData);
+            transform.SetParent(SlotUIOwner.transform);
+            _image.raycastTarget = true;
+        }
+
+        public void SetSlot(SlotUI slotUI) {
+            SlotUIOwner = slotUI;
+            SlotUIOwner.SetStack(this);
+            transform.SetParent(SlotUIOwner.transform);
+        }
+
     }
 
 }
