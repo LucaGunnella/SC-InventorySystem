@@ -25,19 +25,28 @@ namespace SCI_LG
         public int AddItem(ItemData itemData, int quantity) {
             var remaining = quantity;
 
+            // If not stackable it creates a separate stack for each
+            if (!itemData.stackable) {
+                while (remaining > 0) {
+                    _stacks.Add(new ItemStack(itemData, 1));
+                    remaining -= 1;
+                }
+                return remaining;
+            }
+            
             // Tries to add remaining quantity to existing stacks
             foreach (var stack in _stacks) {
-                if (stack.ItemData == itemData && stack.quantity < _maxStackSize) {
-                    var spaceAvailable = _maxStackSize - stack.quantity;
-                    var toAdd = Math.Min(spaceAvailable, remaining);
-                    stack.quantity += toAdd;
-                    remaining -= toAdd;
+                if (stack.ItemData != itemData || stack.quantity >= _maxStackSize) continue;
+                
+                var spaceAvailable = _maxStackSize - stack.quantity;
+                var toAdd = Math.Min(spaceAvailable, remaining);
+                stack.quantity += toAdd;
+                remaining -= toAdd;
 
-                    if (remaining == 0) {
-                        PrintInventory();
-                        return 0;
-                    } // All items were added
-                }
+                if (remaining == 0) {
+                    PrintInventory();
+                    return 0;
+                } // All items were added
             }
 
             // Then, create new stacks for the remaining items

@@ -14,14 +14,14 @@ namespace SCI_LG
 
             //switches stack with other item slot
             if (_stackUIowned != null) {
-                _stackUIowned.SetSlot(droppedStack.SlotUIOwner);
+                _stackUIowned.SetSlotUIOwner(droppedStack.SlotUIOwner);
             }
 
-            droppedStack.SetSlot(this);
+            droppedStack.SetSlotUIOwner(this);
         }
 
         public void SetStack(StackUI stackUI) {
-            this._stackUIowned = stackUI;
+            _stackUIowned = stackUI;
         }
 
     }

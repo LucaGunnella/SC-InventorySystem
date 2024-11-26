@@ -7,14 +7,14 @@ using UnityEngine.UI;
 namespace SCI_LG
 {
 
-    public class StackUI : Draggable
+    public class StackUI : Draggable, IPointerClickHandler
     {
 
         [SerializeField] private Image _image;
         [SerializeField] private TextMeshProUGUI _quantityText;
-        
+
         private ItemStack _itemStack;
-        
+
         public SlotUI SlotUIOwner { get; private set; }
 
         protected override void Awake() {
@@ -22,20 +22,30 @@ namespace SCI_LG
             _image = GetComponent<Image>();
 
             if (transform.parent.TryGetComponent<SlotUI>(out var slot))
-                SetSlot(slot);
+                SetSlotUIOwner(slot);
             else
                 throw new NullReferenceException("Slot is null");
         }
 
+        #region Setter methods
         public void SetUI(ItemStack itemStack) {
             _image.sprite = itemStack.ItemData.icon;
             _quantityText.text = itemStack.quantity.ToString();
             _itemStack = itemStack;
         }
 
+        public void SetSlotUIOwner(SlotUI slotUI) {
+            SlotUIOwner = slotUI;
+            SlotUIOwner.SetStack(this);
+            transform.SetParent(SlotUIOwner.transform);
+        }
+        
+        #endregion
+
+        #region IPointerClickHandler implementation
+
         public override void OnBeginDrag(PointerEventData eventData) {
             base.OnBeginDrag(eventData);
-            transform.position = Input.mousePosition;
 
             transform.SetParent(_canvas.transform);
             transform.SetAsLastSibling();
@@ -51,10 +61,12 @@ namespace SCI_LG
             _image.raycastTarget = true;
         }
 
-        public void SetSlot(SlotUI slotUI) {
-            SlotUIOwner = slotUI;
-            SlotUIOwner.SetStack(this);
-            transform.SetParent(SlotUIOwner.transform);
+        #endregion
+
+        public void OnPointerClick(PointerEventData eventData) {
+            if (eventData.button == PointerEventData.InputButton.Right) {
+                Debug.Log("Right");
+            }
         }
 
     }
