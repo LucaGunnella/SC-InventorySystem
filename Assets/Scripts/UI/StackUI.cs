@@ -31,9 +31,17 @@ namespace SCI_LG
 
         #region Setter methods
         public void SetUI(ItemStack itemStack) {
-            _image.sprite = itemStack.ItemData.icon;
-            _quantityText.text = itemStack.quantity.ToString();
-            ItemStack = itemStack;
+            if (itemStack == null) {
+                _image.sprite = default;
+                _quantityText.text = default;
+                ItemStack = null;
+                SlotUIOwner.SetStackUIOwned(null);
+            }
+            else {
+                _image.sprite = itemStack.ItemData.icon;
+                _quantityText.text = itemStack.Quantity.ToString();
+                ItemStack = itemStack;
+            }
         }
 
         public void SetSlotUIOwner(SlotUI slotUI) {

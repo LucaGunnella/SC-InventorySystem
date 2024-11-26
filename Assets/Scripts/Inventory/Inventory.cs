@@ -12,7 +12,7 @@ namespace SCI_LG
         private int _maxStackSize;
 
         public event Action<ItemStack> OnAddItem;
-        public event Action<ItemStack> OnRemoveItem;
+        public event Action<IEnumerable<ItemStack>> OnRemoveItem;
 
         public event Action OnSort;
 
@@ -35,7 +35,7 @@ namespace SCI_LG
             // If not stackable it creates a separate stack for each
             if (!itemData.stackable) {
                 while (remaining > 0) {
-                    var newItemStack = new ItemStack(itemData, 1);
+                    var newItemStack = CreateItemStack(itemData);
                     _stacks.Add(newItemStack);
                     OnAddItem?.Invoke(newItemStack);
                     remaining -= 1;
@@ -46,11 +46,11 @@ namespace SCI_LG
 
             // Tries to add remaining quantity to existing stacks
             foreach (var stack in _stacks) {
-                if (stack.ItemData != itemData || stack.quantity >= _maxStackSize) continue;
+                if (stack.ItemData != itemData || stack.Quantity >= _maxStackSize) continue;
 
-                var spaceAvailable = _maxStackSize - stack.quantity;
+                var spaceAvailable = _maxStackSize - stack.Quantity;
                 var toAdd = Math.Min(spaceAvailable, remaining);
-                stack.quantity += toAdd;
+                stack.Quantity += toAdd;
                 remaining -= toAdd;
 
                 if (remaining == 0) {
@@ -63,7 +63,7 @@ namespace SCI_LG
             // Then, create new stacks for the remaining items
             while (remaining > 0) {
                 var toAdd = Math.Min(_maxStackSize, remaining);
-                var newItemStack = new ItemStack(itemData, toAdd);
+                var newItemStack = CreateItemStack(itemData);
                 _stacks.Add(newItemStack);
                 OnAddItem?.Invoke(newItemStack);
                 remaining -= toAdd;
@@ -73,30 +73,40 @@ namespace SCI_LG
             return remaining; // Return leftover items
         }
 
+        private ItemStack CreateItemStack(ItemData itemData) {
+            var newItemStack = new ItemStack(itemData, 1);
+            newItemStack.OnConsumed += DestroyItemStack;
+            return newItemStack;
+        }
+
+        private void DestroyItemStack(ItemStack itemStack) {
+            itemStack.OnConsumed -= DestroyItemStack;
+            _stacks.Remove(itemStack);
+            OnRemoveItem?.Invoke(new List<ItemStack> { itemStack });
+        }
+
         /// <summary>
         /// Remove items from the inventory, returns true if successful
         /// </summary>
         /// <param name="item">type of item to remove</param>
         /// <param name="quantity">number of items to remove</param>
         /// <returns></returns>
-        public bool TryRemoveItem(ItemData item, int quantity) {
+        public bool TryRemoveQuantity(ItemData item, int quantity) {
             var toRemove = quantity;
 
             for (var i = 0; i < _stacks.Count; i++) {
                 if (_stacks[i].ItemData == item) {
-                    if (_stacks[i].quantity > toRemove) {
-                        _stacks[i].quantity -= toRemove;
-                        OnRemoveItem?.Invoke(_stacks[i]);
+                    if (_stacks[i].Quantity > toRemove) {
+                        _stacks[i].Quantity -= toRemove;
                         return true; // Successfully removed all items
                     }
 
-                    toRemove -= _stacks[i].quantity;
+                    toRemove -= _stacks[i].Quantity;
                     _stacks.RemoveAt(i);
                     i--; // Adjust index after removal
                 }
 
                 if (toRemove == 0) {
-                    OnRemoveItem?.Invoke(_stacks[i]);
                     return true;
                 } // All items were removed
             }
@@ -115,10 +125,10 @@ namespace SCI_LG
             // Aggregate quantities for each ItemData
             foreach (var stack in _stacks) {
                 if (aggregatedData.ContainsKey(stack.ItemData)) {
-                    aggregatedData[stack.ItemData] += stack.quantity;
+                    aggregatedData[stack.ItemData] += stack.Quantity;
                 }
                 else {
-                    aggregatedData[stack.ItemData] = stack.quantity;
+                    aggregatedData[stack.ItemData] = stack.Quantity;
                 }
             }
 
@@ -134,13 +144,13 @@ namespace SCI_LG
         /// </summary>
         /// <param name="method"></param>
         /// <exception cref="ArgumentOutOfRangeException"></exception>
-        private void OrderByMethod(OrderMethod method) {
+        public void OrderByMethod(OrderMethod method) {
             switch (method) {
                 case OrderMethod.LOW_TO_HIGH:
-                    _stacks.Sort((a, b) => a.quantity - b.quantity);
+                    _stacks.Sort((a, b) => a.Quantity - b.Quantity);
                     break;
                 case OrderMethod.HIGH_TO_LOW:
-                    _stacks.Sort((a, b) => -a.quantity - b.quantity);
+                    _stacks.Sort((a, b) => -a.Quantity - b.Quantity);
                     break;
                 default:
                     throw new ArgumentOutOfRangeException(nameof(method), method, null);
@@ -154,15 +164,15 @@ namespace SCI_LG
         /// </summary>
         /// <param name="method"></param>
         /// <exception cref="ArgumentOutOfRangeException"></exception>
-        private void StackAndOrderByMethod(OrderMethod method) {
+        public void AggregateAndOrderByMethod(OrderMethod method) {
             switch (method) {
                 case OrderMethod.LOW_TO_HIGH:
                     AggregateStacks();
-                    _stacks.Sort((a, b) => a.quantity - b.quantity);
+                    _stacks.Sort((a, b) => a.Quantity - b.Quantity);
                     break;
                 case OrderMethod.HIGH_TO_LOW:
                     AggregateStacks();
-                    _stacks.Sort((a, b) => -a.quantity - b.quantity);
+                    _stacks.Sort((a, b) => -a.Quantity - b.Quantity);
                     break;
                 default:
                     throw new ArgumentOutOfRangeException(nameof(method), method, null);
@@ -181,7 +191,7 @@ namespace SCI_LG
         private void PrintInventory() {
             var itemsString = string.Empty;
             foreach (var stack in _stacks) {
-                itemsString += stack.ItemData.itemName + " " + stack.quantity + "\n";
+                itemsString += stack.ItemData.itemName + " " + stack.Quantity + "\n";
             }
 
             var inventoryString = "Inventory:\n" + itemsString + "\n";
@@ -195,11 +205,22 @@ namespace SCI_LG
     {
 
         public ItemData ItemData { get; private set; }
-        public int quantity;
+        private int _quantity;
+
+        public int Quantity {
+            get => _quantity;
+            set {
+                _quantity = value;
+                if(_quantity <= 0)
+                    OnConsumed?.Invoke(this);
+            }
+        }
+
+        public event Action<ItemStack> OnConsumed;
 
         public ItemStack(ItemData itemData, int quantity) {
             ItemData = itemData;
-            this.quantity = quantity;
+            Quantity = quantity;
         }
 
     }

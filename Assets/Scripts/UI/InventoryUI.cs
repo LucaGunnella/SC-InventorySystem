@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using UnityEngine.UI;
 
 namespace SCI_LG
 {
@@ -9,21 +10,30 @@ namespace SCI_LG
     public class InventoryUI : MonoBehaviour
     {
 
-        [SerializeField] private GameObject stackUIprefab;
+        [SerializeField] private GameObject _stackUIprefab;
+        [SerializeField] private Button _orderHighToLowButton;
+        [SerializeField] private Button _orderLowToHighButton;
+        [SerializeField] private Button _aggregateHighToLowButton;
+        [SerializeField] private Button _aggregateLowToHighButton;
 
         private List<SlotUI> slotUIs = new();
         private List<StackUI> stackUIs = new();
 
         private Inventory inventory;
 
-        private List<StackUI> stackUIPool; //pool of unused UI to be recycled
+        private List<StackUI> stackUIPool = new(); //pool of unused UI to be recycled
 
         public void Init(Inventory inventory) {
             this.inventory = inventory;
 
             inventory.OnAddItem += RefreshUI;
-            inventory.OnRemoveItem += RemoveStackUI;
+            inventory.OnRemoveItem += RemoveStackUIs;
             inventory.OnSort += RearrangeUI;
+            
+            _orderHighToLowButton.onClick.AddListener( () => inventory.OrderByMethod(OrderMethod.HIGH_TO_LOW));
+            _orderLowToHighButton.onClick.AddListener( () => inventory.OrderByMethod(OrderMethod.LOW_TO_HIGH));
+            _aggregateHighToLowButton.onClick.AddListener(() => inventory.AggregateAndOrderByMethod(OrderMethod.HIGH_TO_LOW));
+            _aggregateLowToHighButton.onClick.AddListener(() => inventory.AggregateAndOrderByMethod(OrderMethod.LOW_TO_HIGH));
         }
 
         #region UnityEvent functions
@@ -67,9 +77,7 @@ namespace SCI_LG
             }
 
             //checks if any stackUI has to be removed and adds any leftover to pool
-            foreach (var stackUI in stackUIs.Where(x => !itemStacks.Contains(x.ItemStack))) {
-                RemoveStackUI(stackUI);
-            }
+            RemoveStackUIs(stackUIs.Where(x => !itemStacks.Contains(x.ItemStack)));
         }
 
         /// <summary>
@@ -80,10 +88,11 @@ namespace SCI_LG
             RefreshUI();
         }
 
+        /// <summary>
+        /// Clears UI by removing each
+        /// </summary>
         private void ClearUI() {
-            foreach (var stackUI in stackUIs) {
-                RemoveStackUI(stackUI);
-            }
+            RemoveStackUIs(stackUIs);
         }
 
         #endregion
@@ -102,11 +111,11 @@ namespace SCI_LG
 
                 stackUIScript.SetUI(itemStack);
                 stackUIs.Add(stackUIScript);
-                stackUI.transform.SetParent(slotUIs.First(x => x.transform.childCount == 0).transform);
+                stackUI.SetSlotUIOwner(slotUIs.First(x => x.transform.childCount == 0));
                 stackUI.gameObject.SetActive(true);
             }
             else {
-                var stackUI = Instantiate(stackUIprefab, slotUIs.First(x => x.transform.childCount == 0).transform);
+                var stackUI = Instantiate(_stackUIprefab, slotUIs.First(x => x.transform.childCount == 0).transform);
                 var stackUIScript = stackUI.GetComponent<StackUI>();
 
                 stackUIScript.SetUI(itemStack);
@@ -124,39 +133,54 @@ namespace SCI_LG
                 stackUIs.FirstOrDefault(x => x.ItemStack == itemStack); //checks if stack is already in UI
             if (existingStackUI == null) return false;
 
-            if (existingStackUI.ItemStack.quantity != itemStack.quantity) {
-                //checks if quantity is changed
-                existingStackUI.SetUI(itemStack); //sets stackUI with same itemStack but updated data
-            }
-
+            existingStackUI.SetUI(itemStack); //sets stackUI with same itemStack but updated data
+            
             return true;
         }
 
         /// <summary>
         /// Removes target stackUI (adds to pool the leftovers).
         /// </summary>
-        /// <param name="stackUI">stack to remove</param>
-        private void RemoveStackUI(StackUI stackUI) {
-            stackUI.SetUI(null);
-            stackUI.transform.SetParent(transform);
-            stackUI.gameObject.SetActive(false);
-            stackUIPool.Add(stackUI);
+        /// <param name="stackUIsToRemove">stack to remove</param>
+        private void RemoveStackUIs(IEnumerable<StackUI> stackUIsToRemove) {
+            var toRemove = new List<StackUI>();
+
+            foreach (var stackUI in stackUIsToRemove) {
+                stackUI.SetUI(null);
+                stackUI.transform.SetParent(transform);
+                stackUI.gameObject.SetActive(false);
+                stackUIPool.Add(stackUI);
+                toRemove.Add(stackUI);
+            }
+
+            foreach (var stackUI in toRemove) {
+                stackUIs.Remove(stackUI);
+            }
         }
 
         /// <summary>
         /// Removes stackUi with assigned itemStack that is no longer in inventory (adds to pool the leftovers).
         /// </summary>
-        /// <param name="itemStack">itemStack to check</param>
-        private void RemoveStackUI(ItemStack itemStack) {
-            var stackUI = stackUIPool.FirstOrDefault(x => x.ItemStack == itemStack);
-            if (stackUI == null) {
-                throw new NullReferenceException("Stack UI could not be found");
+        /// <param name="itemStacks">itemStack to check</param>
+        private void RemoveStackUIs(IEnumerable<ItemStack> itemStacks) {
+            var toRemove = new List<StackUI>();
+
+            foreach (var stack in itemStacks) {
+                var stackUI = stackUIPool.FirstOrDefault(x => x.ItemStack == stack);
+                if (stackUI == null) {
+                    throw new NullReferenceException("Stack UI could not be found");
+                }
+
+                stackUI.SetUI(null);
+                stackUI.transform.SetParent(transform);
+                stackUI.gameObject.SetActive(false);
+                stackUIPool.Add(stackUI);
+                toRemove.Add(stackUI);
             }
 
-            stackUI.SetUI(null);
-            stackUI.transform.SetParent(transform);
-            stackUI.gameObject.SetActive(false);
-            stackUIPool.Add(stackUI);
+            foreach (var stackUI in toRemove) {
+                stackUIs.Remove(stackUI);
+            }
         }
 
         #endregion
