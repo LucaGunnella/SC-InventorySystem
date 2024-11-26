@@ -13,7 +13,7 @@ namespace SCI_LG
         [SerializeField] private Image _image;
         [SerializeField] private TextMeshProUGUI _quantityText;
 
-        private ItemStack _itemStack;
+        public ItemStack ItemStack { get; private set; }
 
         public SlotUI SlotUIOwner { get; private set; }
 
@@ -31,7 +31,7 @@ namespace SCI_LG
         public void SetUI(ItemStack itemStack) {
             _image.sprite = itemStack.ItemData.icon;
             _quantityText.text = itemStack.quantity.ToString();
-            _itemStack = itemStack;
+            ItemStack = itemStack;
         }
 
         public void SetSlotUIOwner(SlotUI slotUI) {

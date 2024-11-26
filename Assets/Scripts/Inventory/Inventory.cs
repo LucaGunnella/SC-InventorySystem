@@ -10,6 +10,9 @@ namespace SCI_LG
 
         private List<ItemStack> _stacks; // List of stacks in the inventory
         private int _maxStackSize;
+        
+        public event Action<ItemStack> OnAddItem;
+        public event Action<ItemStack> OnRemoveItem;
 
         public Inventory(int maxStackSize) {
             _stacks = new List<ItemStack>();
@@ -28,7 +31,9 @@ namespace SCI_LG
             // If not stackable it creates a separate stack for each
             if (!itemData.stackable) {
                 while (remaining > 0) {
-                    _stacks.Add(new ItemStack(itemData, 1));
+                    var newItemStack = new ItemStack(itemData, 1);
+                    _stacks.Add(newItemStack);
+                    OnAddItem?.Invoke(newItemStack);
                     remaining -= 1;
                 }
                 return remaining;
@@ -44,6 +49,7 @@ namespace SCI_LG
                 remaining -= toAdd;
 
                 if (remaining == 0) {
+                    OnAddItem?.Invoke(stack);
                     PrintInventory();
                     return 0;
                 } // All items were added
@@ -52,7 +58,9 @@ namespace SCI_LG
             // Then, create new stacks for the remaining items
             while (remaining > 0) {
                 var toAdd = Math.Min(_maxStackSize, remaining);
-                _stacks.Add(new ItemStack(itemData, toAdd));
+                var newItemStack = new ItemStack(itemData, toAdd);
+                _stacks.Add(newItemStack);
+                OnAddItem?.Invoke(newItemStack);
                 remaining -= toAdd;
             }
 
@@ -63,7 +71,7 @@ namespace SCI_LG
         /// <summary>
         /// Remove items from the inventory, returns true if successful
         /// </summary>
-        /// <param name="item">Type of item to remove</param>
+        /// <param name="item">type of item to remove</param>
         /// <param name="quantity">number of items to remove</param>
         /// <returns></returns>
         public bool TryRemoveItem(ItemData item, int quantity) {
@@ -73,6 +81,7 @@ namespace SCI_LG
                 if (_stacks[i].ItemData == item) {
                     if (_stacks[i].quantity > toRemove) {
                         _stacks[i].quantity -= toRemove;
+                        OnRemoveItem?.Invoke(_stacks[i]);
                         return true; // Successfully removed all items
                     }
 
@@ -81,13 +90,16 @@ namespace SCI_LG
                     i--; // Adjust index after removal
                 }
 
-                if (toRemove == 0) return true; // All items were removed
+                if (toRemove == 0) {
+                    OnRemoveItem?.Invoke(_stacks[i]);
+                    return true;
+                } // All items were removed
             }
 
             return false; // Not enough items to remove
         }
 
-        // Get a read-only list of stacks for UI or other purposes
+        // Get a read-only list of stacks for UI
         public IReadOnlyList<ItemStack> GetStacks() {
             return _stacks.AsReadOnly();
         }
@@ -104,7 +116,6 @@ namespace SCI_LG
 
     }
 
-// Represents a stack of items in the inventory
     [Serializable]
     public class ItemStack
     {
