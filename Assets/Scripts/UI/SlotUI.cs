@@ -20,7 +20,7 @@ namespace SCI_LG
             droppedStack.SetSlotUIOwner(this);
         }
 
-        public void SetStack(StackUI stackUI) {
+        public void SetStackUIOwned(StackUI stackUI) {
             _stackUIowned = stackUI;
         }
 

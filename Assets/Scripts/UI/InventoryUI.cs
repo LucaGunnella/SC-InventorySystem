@@ -23,6 +23,7 @@ namespace SCI_LG
 
             inventory.OnAddItem += RefreshUI;
             inventory.OnRemoveItem += RemoveStackUI;
+            inventory.OnSort += RearrangeUI;
         }
 
         #region UnityEvent functions
@@ -67,6 +68,20 @@ namespace SCI_LG
 
             //checks if any stackUI has to be removed and adds any leftover to pool
             foreach (var stackUI in stackUIs.Where(x => !itemStacks.Contains(x.ItemStack))) {
+                RemoveStackUI(stackUI);
+            }
+        }
+
+        /// <summary>
+        /// Clears UI so that it can be rearranged by the Refresh.
+        /// </summary>
+        private void RearrangeUI() {
+            ClearUI();
+            RefreshUI();
+        }
+
+        private void ClearUI() {
+            foreach (var stackUI in stackUIs) {
                 RemoveStackUI(stackUI);
             }
         }

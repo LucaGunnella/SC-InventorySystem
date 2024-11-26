@@ -10,14 +10,18 @@ namespace SCI_LG
 
         private List<ItemStack> _stacks; // List of stacks in the inventory
         private int _maxStackSize;
-        
+
         public event Action<ItemStack> OnAddItem;
         public event Action<ItemStack> OnRemoveItem;
+
+        public event Action OnSort;
 
         public Inventory(int maxStackSize) {
             _stacks = new List<ItemStack>();
             _maxStackSize = maxStackSize;
         }
+
+        #region Inventory management
 
         /// <summary>
         /// Add items to the inventory, returns the number of leftover items if any
@@ -36,13 +40,14 @@ namespace SCI_LG
                     OnAddItem?.Invoke(newItemStack);
                     remaining -= 1;
                 }
+
                 return remaining;
             }
-            
+
             // Tries to add remaining quantity to existing stacks
             foreach (var stack in _stacks) {
                 if (stack.ItemData != itemData || stack.quantity >= _maxStackSize) continue;
-                
+
                 var spaceAvailable = _maxStackSize - stack.quantity;
                 var toAdd = Math.Min(spaceAvailable, remaining);
                 stack.quantity += toAdd;
@@ -99,6 +104,75 @@ namespace SCI_LG
             return false; // Not enough items to remove
         }
 
+
+        /// <summary>
+        /// Aggregates existing stacks to compact inventory.
+        /// </summary>
+        private void AggregateStacks() {
+            // Dictionary to group quantities by ItemData
+            var aggregatedData = new Dictionary<ItemData, int>();
+
+            // Aggregate quantities for each ItemData
+            foreach (var stack in _stacks) {
+                if (aggregatedData.ContainsKey(stack.ItemData)) {
+                    aggregatedData[stack.ItemData] += stack.quantity;
+                }
+                else {
+                    aggregatedData[stack.ItemData] = stack.quantity;
+                }
+            }
+
+            // Rebuild the itemStacks list with aggregated data
+            _stacks = new List<ItemStack>();
+            foreach (var kvp in aggregatedData) {
+                AddItem(kvp.Key, kvp.Value);
+            }
+        }
+
+        /// <summary>
+        /// Orders stacks based on given method.
+        /// </summary>
+        /// <param name="method"></param>
+        /// <exception cref="ArgumentOutOfRangeException"></exception>
+        private void OrderByMethod(OrderMethod method) {
+            switch (method) {
+                case OrderMethod.LOW_TO_HIGH:
+                    _stacks.Sort((a, b) => a.quantity - b.quantity);
+                    break;
+                case OrderMethod.HIGH_TO_LOW:
+                    _stacks.Sort((a, b) => -a.quantity - b.quantity);
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(method), method, null);
+            }
+
+            OnSort?.Invoke();
+        }
+
+        /// <summary>
+        /// Aggregates stacks and then orders them based on given method. 
+        /// </summary>
+        /// <param name="method"></param>
+        /// <exception cref="ArgumentOutOfRangeException"></exception>
+        private void StackAndOrderByMethod(OrderMethod method) {
+            switch (method) {
+                case OrderMethod.LOW_TO_HIGH:
+                    AggregateStacks();
+                    _stacks.Sort((a, b) => a.quantity - b.quantity);
+                    break;
+                case OrderMethod.HIGH_TO_LOW:
+                    AggregateStacks();
+                    _stacks.Sort((a, b) => -a.quantity - b.quantity);
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(method), method, null);
+            }
+
+            OnSort?.Invoke();
+        }
+
+        #endregion
+
         // Get a read-only list of stacks for UI
         public IReadOnlyList<ItemStack> GetStacks() {
             return _stacks.AsReadOnly();
@@ -127,6 +201,14 @@ namespace SCI_LG
             ItemData = itemData;
             this.quantity = quantity;
         }
+
+    }
+
+    public enum OrderMethod
+    {
+
+        LOW_TO_HIGH,
+        HIGH_TO_LOW
 
     }
 

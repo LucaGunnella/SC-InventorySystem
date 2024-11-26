@@ -16,6 +16,8 @@ namespace SCI_LG
         public ItemStack ItemStack { get; private set; }
 
         public SlotUI SlotUIOwner { get; private set; }
+        
+        public event Action<StackUI> OnSelect;
 
         protected override void Awake() {
             base.Awake();
@@ -36,13 +38,13 @@ namespace SCI_LG
 
         public void SetSlotUIOwner(SlotUI slotUI) {
             SlotUIOwner = slotUI;
-            SlotUIOwner.SetStack(this);
+            SlotUIOwner.SetStackUIOwned(this);
             transform.SetParent(SlotUIOwner.transform);
         }
         
         #endregion
 
-        #region IPointerClickHandler implementation
+        #region Draggable implementation
 
         public override void OnBeginDrag(PointerEventData eventData) {
             base.OnBeginDrag(eventData);
@@ -52,7 +54,7 @@ namespace SCI_LG
 
             _image.raycastTarget = false;
 
-            SlotUIOwner.SetStack(null);
+            SlotUIOwner.SetStackUIOwned(null);
         }
 
         public override void OnEndDrag(PointerEventData eventData) {
@@ -65,7 +67,7 @@ namespace SCI_LG
 
         public void OnPointerClick(PointerEventData eventData) {
             if (eventData.button == PointerEventData.InputButton.Right) {
-                Debug.Log("Right");
+                OnSelect?.Invoke(this);
             }
         }
 
